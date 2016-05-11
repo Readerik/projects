@@ -1,0 +1,63 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+
+namespace Databazova_aplikace.ViewModel
+{
+    class MainViewModel
+    {
+        private Model.DB db;
+        private DataTable _data;
+        private DataView _dataView;
+        public string _jmeno;
+        public Command Pridej { get; set; }
+        private int _vybranyIndex;
+
+        public string Jmeno { get { return _jmeno; } set { _jmeno = value; ChangeProperty("Jmeno"); } }
+        public DataTable Data { get { return _data; } set { _data = value; this.ChangeProperty("DataView"); } }
+        public DataView DataView { get { return _dataView; } set { _dataView = value; this.ChangeProperty("DataView"); } }
+        public int VybranyIndex
+        {
+            get { return _vybranyIndex; }
+            set { _vybranyIndex = value; this.ChangeProperty("VybranyIndex"); }
+        }
+
+        public MainViewModel()
+        {
+            db = new Model.DB();
+            _data = new DataTable();
+            _data = db.GetTable("SELECT * FROM uzivatel", "id ASC");
+            _dataView = new DataView(_data);
+            Pridej = new Command(PridejExecute);
+
+        }
+        public void Refresh()
+        {
+            db.Refresh("SELECT * FROM uzivatel", "", _data);
+            DataView = new DataView(_data);
+            this.ChangeProperty("PocetRadku");
+        }
+
+        public void PridejExecute()
+        {
+            string updateString;
+            updateString = String.Format("INSERT INTO uzivatel SET jmeno=\"{0}\"",Jmeno);
+            db.Execute(updateString);
+            Refresh();
+        }
+        protected void ChangeProperty(string nazevVlastnosti)
+        {
+            if (this.PropertyChanged != null)
+            {
+                this.PropertyChanged(this, new PropertyChangedEventArgs(nazevVlastnosti));
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+    }
+}

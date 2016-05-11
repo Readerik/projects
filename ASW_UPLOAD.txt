@@ -1,0 +1,22 @@
+{block content}
+  
+  {for $i = 0; $i < $cislo; $i++}
+    		<a href="{$pole[$i]}"><img src="{$pole2[$i]}" alt="obr"></a>
+		{/for}
+		{control uploadForm}
+
+   {foreach $posts as $post}
+	<h2><a href="{link Post:show $post->postID}">{$post->title}</a></h2>
+	</br></br></br>
+  {/foreach}
+  <h1>	<a n:href="Post:create">Napsat nový pøíspìvek</a></h2>
+{/block}
+	
+
+
+{block head}
+<style> h1 { font-size: 3EM; color: red; background-color: black; } 
+
+	
+</style>
+{/block}

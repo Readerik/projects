@@ -1,0 +1,91 @@
+<?php
+namespace App\Presenters;
+
+use Nette,
+    Nette\Application\UI\Form,
+	Nette\Application\UI;
+
+
+class PostPresenter extends BasePresenter
+{
+    /** @var Nette\Database\Context */
+    private $database;
+
+    public function __construct(Nette\Database\Context $database)
+    {
+        $this->database = $database;
+    }
+
+    public function renderShow($postId)
+    {
+        $post = $this->database->table('posts')->get($postId);
+	    $this->template->post = $post;
+	    $this->template->comments = $post->related('comment')->order('created_at');
+    }
+	protected function createComponentCommentForm()
+{
+    $form = new Form;
+
+    $form->addText('name', 'Jméno:')
+        ->setRequired();
+
+    $form->addText('email', 'Email:');
+
+    $form->addTextArea('content', 'Komentáø:')
+        ->setRequired();
+
+    $form->addSubmit('send', 'Publikovat komentáø');
+	$form->onSuccess[] = array($this, 'commentFormSucceeded');
+    return $form;
+}
+	public function commentFormSucceeded($form, $values)
+{
+    $postId = $this->getParameter('postId');
+
+    $this->database->table('comments')->insert(array(
+        'post_id' => $postId,
+        'name' => $values->name,
+        'email' => $values->email,
+        'content' => $values->content,
+    ));
+
+    $this->flashMessage('Dìkuji za komentáø', 'success');
+    $this->redirect('this');
+}
+
+protected function createComponentPostForm()
+{
+    $form = new Form;
+    $form->addText('title', 'Titulek:')
+        ->setRequired();
+    $form->addTextArea('content', 'Obsah:')
+        ->setRequired();
+
+    $form->addSubmit('send', 'Uložit a publikovat');
+    $form->onSuccess[] = array($this, 'postFormSucceeded');
+
+    return $form;
+}
+public function postFormSucceeded($form, $values)
+{
+    $postId = $this->getParameter('postId');
+
+    if ($postId) {
+        $post = $this->database->table('posts')->get($postId);
+        $post->update($values);
+    } else {
+        $post = $this->database->table('posts')->insert($values);
+    }
+
+    $this->flashMessage('Pøíspìvek byl úspìšnì publikován.', 'success');
+    $this->redirect('show', $post->postID);
+}
+public function actionEdit($postId)
+    {
+    $post = $this->database->table('posts')->get($postId);
+    if (!$post) {
+        $this->error('Pøíspìvek nebyl nalezen');
+    }
+    $this['postForm']->setDefaults($post->toArray());
+}
+}

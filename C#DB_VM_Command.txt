@@ -1,0 +1,30 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Databazova_aplikace.ViewModel
+{
+    public class Command : BaseCommand
+    {
+        private Action akce;
+
+        public Command(Action akce, Func<bool> canExecute)
+        {
+            if (akce == null)
+                throw new ArgumentNullException("Akce nemá žádnou obsluhu.");
+
+            this.akce = akce;
+            this.canExecute = canExecute;
+        }
+
+        public Command(Action akce) : this(akce, null) { }
+
+        override public void Execute(object parameter = null)
+        {
+            //System.Windows.Application.Current.Dispatcher.Invoke(akce);
+            this.akce();
+        }
+    }
+}

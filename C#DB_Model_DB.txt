@@ -1,0 +1,70 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using MySql.Data.MySqlClient;
+using System.Data;
+
+namespace Databazova_aplikace.Model
+{
+    class DB
+    {
+        private MySqlConnection connection;
+        private string server;
+        private string database;
+        private string uid;
+        private string password;
+
+        public DB()
+        {
+            server = "localhost";
+            database = "MyDB";
+            uid = "root";
+            password = "";
+            string connectionString;
+            connectionString = "SERVER=" + server + ";" + "DATABASE=" +
+            database + ";" + "UID=" + uid + ";" + "PASSWORD=" + password + ";";
+
+            connection = new MySqlConnection(connectionString);
+        }
+        public DataTable GetTable(String query, String sortBy)
+        {
+            DataTable dataTable = new DataTable(); // Vnitøní reprezentace dat v pamìti (http://msdn.microsoft.com/en-us/library/system.data.datatable.aspx)
+            Refresh(query, sortBy, dataTable);
+            return dataTable;
+        }
+
+        public void Refresh(String query, String sortBy, DataTable dt)
+        {
+            try
+            {
+                MySqlDataAdapter adapter;
+                dt.Clear();
+                adapter = new MySqlDataAdapter(query, connection);
+                adapter.Fill(dt);
+                dt.DefaultView.Sort = sortBy;
+                connection.Close();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public void Execute(String sql)
+        {
+            try
+            {
+                MySqlCommand cmd = new MySqlCommand(sql, connection);
+                if (!(connection.State == ConnectionState.Open)) connection.Open();
+                cmd.ExecuteNonQuery();
+                connection.Close();
+            }
+            catch (MySqlException ex)
+            {
+                throw ex;
+            }
+        }
+    }
+}

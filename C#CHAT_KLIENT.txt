@@ -1,0 +1,120 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading.Tasks;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+
+using System.IO;
+using System.Collections;
+
+
+namespace klient
+{
+    class Program
+    {
+        public static object DeserializeFromStream(MemoryStream stream)
+        {
+            IFormatter formatter = new BinaryFormatter();
+            stream.Seek(0, SeekOrigin.Begin);
+            object objectType = formatter.Deserialize(stream);
+            return objectType;
+        }
+        public static void Klient()
+        {
+            start:
+            IPAddress adresa = IPAddress.Parse("127.0.0.1");
+            string data = null;
+            Console.WriteLine("\nKlient");
+            try
+            {
+                Socket soket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                
+                byte[] bytes = new Byte[1024];
+                soket.Connect(adresa, 6666);
+                bytes = new byte[1024];
+                
+                Console.WriteLine("zadejte uživatelské jméno: ");
+                string jmeno = Console.ReadLine();
+                byte[] nick = Encoding.UTF8.GetBytes(jmeno);
+                soket.Send(nick);
+                int bytesRec = soket.Receive(bytes);
+                data = Encoding.UTF8.GetString(bytes, 0, bytesRec);
+                
+                if (data == "uživatel již existuje")
+                {
+                    Console.WriteLine("Uživatel již existuje, pro pokraèování stisknìte enter...");
+                    Console.ReadKey();
+                    goto start;
+                }
+                else
+                {
+                    Console.WriteLine("uživatel se pøihlásil");
+                    /*
+                    MemoryStream strim = new MemoryStream(bytesRec);
+                    
+                    //object objectType = formatter.Deserialize(stream);
+                    
+                    //Console.WriteLine("pøijato:"+ data);
+                    var neco = new MemoryStream(Encoding.UTF8.GetBytes(data));
+                    IFormatter formatter = new BinaryFormatter();
+                    strim.Seek(0, SeekOrigin.Begin);
+                    List<string> list = (List<string>)formatter.Deserialize(neco);
+                    //IList list = (IList)DeserializeFromStream(strim);
+                    //formatter.Deserialize(kolekce);
+                    //kolekce = (Hashtable)formatter.Deserialize(neco);
+                    //List<string> listik = new List<string>(kolekce)
+                     Console.WriteLine("list uživatelù:");
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        Console.WriteLine(list[i]);
+                    }
+                    */
+                }
+                while (true)
+                {
+                    Task task = new Task(() => { StartReceiving(soket); });
+                    task.Start();
+                    Console.WriteLine("Odeslat zprávu: ");
+                    string zprava = Console.ReadLine();
+                    byte[] msg = Encoding.UTF8.GetBytes(zprava);
+                    int byteCount = soket.Send(msg);
+                    
+                }
+                
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            Console.ReadKey();
+        }
+        public static void StartReceiving(Socket user)
+        {
+
+            byte[] bytes = new Byte[1024];
+            string data = null;
+
+            while (true)
+            {
+                try
+                {
+                    int bytesRec = user.Receive(bytes);
+                    data = Encoding.UTF8.GetString(bytes, 0, bytesRec);
+                    Console.WriteLine("pøijatá data: " + data);
+                }
+                catch
+                {
+
+                }
+            }
+        }
+        static void Main(string[] args)
+        {
+            Klient();
+        }
+    }
+}

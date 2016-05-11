@@ -1,0 +1,179 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Runtime.Serialization;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+
+namespace chat_konzole
+{
+    class Program
+    {
+        public static MemoryStream SerializeToStream(object objectType)
+        {
+            MemoryStream stream = new MemoryStream();
+            IFormatter formatter = new BinaryFormatter();
+            formatter.Serialize(stream, objectType);
+            return stream;
+        }
+        static List<string> listik = new List<string>();
+        static Dictionary<string, Socket> slovnik = new Dictionary<string,Socket>();
+        public static void Server()
+        {
+            Console.WriteLine("Server");
+            Socket soket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            
+            
+            byte[] bytes = new Byte[1024];
+            //string data = null;
+            try
+            {
+                soket.Bind(new IPEndPoint(IPAddress.Any, 6666));
+                soket.Listen(10);
+                Console.WriteLine("Èekání na pøipojení...");
+                
+                while (true)
+                {
+                    Socket klient = soket.Accept();
+                    Console.WriteLine("pøipojil se klient z ip" + soket.LocalEndPoint);
+                    Task task = new Task(() => { StartReceiving(klient); });
+                    task.Start();
+                    
+                    Console.WriteLine("Odeslat zprávu: ");
+                    string zprava = Console.ReadLine();
+                    byte[] msg = Encoding.UTF8.GetBytes(zprava);
+                    foreach (var jmeno in slovnik)
+                    {
+                        if (IsConnected(klient) == true)
+                        {
+                            jmeno.Value.Send(msg);
+                        }
+                        else Console.WriteLine("Klient se odpojil");
+                    }
+                    /*
+                    for (int i = 0; i < listik.Count; i++)
+                    {
+                        
+                            listik[i].Send(msg);
+                        
+                        
+                    }
+                    */
+                    //klient.Send(msg);
+                    
+                }
+                //Console.WriteLine("Odesláno {0} bytes.", byteCount);
+                
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            Console.WriteLine("\nStiskni ENTER pro pokraèování...");
+            Console.Read();
+
+        }
+
+        public static void StartReceiving(Socket user)
+        {
+            
+            //listik.Add(user);
+            byte[] bytes = new Byte[1024];
+            string data = null;
+            string nick = null;
+            string zprava = null;
+            //string uzivatel;
+            try
+            {
+                int bytesJmeno = user.Receive(bytes);
+                
+                nick = Encoding.UTF8.GetString(bytes, 0, bytesJmeno);
+                
+                if (!slovnik.ContainsKey(nick))
+                {
+                    slovnik.Add(nick, user);
+                    //IFormatter formatter = new BinaryFormatter();
+                    //MemoryStream stream = new MemoryStream();
+                    //formatter.Serialize(stream, slovnik);
+                    /*
+                    foreach(var jmeno in slovnik)
+                    {
+                        listik.Add(jmeno.Key);
+                    }
+                    try
+                    {
+                        MemoryStream strim = SerializeToStream(listik);
+                        //Console.WriteLine(strim.ToArray());
+                        
+                        byte[] msg = strim.ToArray();
+                        user.Send(msg);
+                    }
+                    catch(Exception e)
+                    {
+                        Console.WriteLine(e.ToString());
+                    }
+                    */
+                    zprava = "uživatel se pøihlásil";
+                    byte[] msg = Encoding.UTF8.GetBytes(zprava);
+                    user.Send(msg);
+                }
+                else
+                {
+                    zprava = "uživatel již existuje";
+                    byte[] msg = Encoding.UTF8.GetBytes(zprava);
+                    user.Send(msg);
+                }
+                    
+                
+            }
+            catch
+            {
+                Console.WriteLine("error");
+            }
+            while (true)
+            {
+                try
+                {
+                    int bytesRec = user.Receive(bytes);
+                    data = Encoding.UTF8.GetString(bytes, 0, bytesRec);
+                    Console.WriteLine(nick + ": " + data);
+                   
+                }
+                catch
+                {
+                    //Console.WriteLine(e.ToString());
+                    break;
+                }
+                
+            }
+        }
+
+        public static bool IsConnected(Socket uzivatel)
+        {
+            if (uzivatel.Poll(100, SelectMode.SelectRead) && uzivatel.Available == 0)
+            {
+                //listik.Remove(uzivatel);
+                //slovnik.Remove(uzivatel);
+                var item = slovnik.First(kvp => kvp.Value == uzivatel);
+
+                slovnik.Remove(item.Key);
+                return false;
+            }
+            else return true;
+        }
+        
+        
+
+        static void Main(string[] args)
+        {
+            
+            Server();
+            
+           
+        }
+    }
+}

@@ -1,0 +1,203 @@
+<?php
+
+namespace App\Presenters;
+
+use Nette;
+use Nette\Mail;
+use App\Forms\SignFormFactory;
+use Nette\Security\Passwords;
+use Nette\Utils;
+use Nette\Security\User;
+use Nette\Security as NS;
+
+
+
+
+
+class SignPresenter extends BasePresenter
+{
+	/** @var SignFormFactory @inject */
+	public $factory;
+
+
+	/**
+	 * Sign-in form factory.
+	 * @return Nette\Application\UI\Form
+	 */
+	 private $database;
+	 private $klic;
+	 private $nickx;
+
+    public function __construct(Nette\Database\Context $database)
+    {
+        $this->database = $database;	
+    }
+	protected function createComponentSignInForm()
+	{
+	$form = new Nette\Application\UI\Form;
+    $form->addText('username', 'Uivatelské jméno:')
+        ->setRequired('Prosím vyplòte své uivatelské jméno.');
+
+    $form->addPassword('password', 'Heslo:')
+        ->setRequired('Prosím vyplòte své heslo.');
+
+    $form->addCheckbox('remember', 'Zùstat pøihlášen');
+
+    $form->addSubmit('send', 'Pøihlásit');
+
+    $form->onSuccess[] = array($this, 'signInFormSucceeded');
+    return $form;
+	}
+	public function signInFormSucceeded($form)
+{
+    $values = $form->values;
+
+
+    try {
+        $this->getUser()->login($values->username, $values->password);
+        $this->redirect('Homepage:');
+		
+
+    } catch (Nette\Security\AuthenticationException $e) {
+        $form->addError('Nesprávné pøihlašovací jméno nebo heslo.');
+    }
+
+
+
+
+}
+	protected function createComponentActivationForm()
+	{
+	$form2 = new Nette\Application\UI\Form;
+    $form2->addText('code', 'Aktivaèní klíè:')
+        ->setRequired('Prosím vyplòte aktivaèní klíè.');
+	$form2->addSubmit('send', 'Aktivovat úèet');
+	$form2->onSuccess[] = array($this, 'activationFormSucceeded');
+	return $form2;
+	}
+
+	public function activationFormSucceeded($form2)
+{
+    $values = $form2->values;
+	try {
+	$sql = "UPDATE users SET rank=1 where actcode='$values->code'";
+	$result = $this->database->query($sql);
+
+    
+	} catch(Nette\Security\AuthenticationException $e) {
+        $form->addError('Špatnı aktivaèní kód');
+    }
+	
+}
+	
+	protected function createComponentRegisterForm()
+	{
+	$form = new Nette\Application\UI\Form;
+    $form->addText('username', 'Uivatelské jméno:')
+        ->setRequired('Prosím vyplòte své uivatelské jméno.');
+
+	$form->addText('email', 'E-mail:')
+        ->setRequired('Prosím vyplòte e-mail.');
+
+    $form->addPassword('password', 'Heslo:')
+        ->setRequired('Prosím vyplòte své heslo.');
+
+
+    $form->addSubmit('send', 'Register');
+
+    $form->onSuccess[] = array($this, 'registerFormSucceeded');
+    return $form;
+	}
+
+
+
+	public function registerFormSucceeded($form)
+	{
+		$values = $form->values;
+		$this->nickx = $values->username;
+		$activationcode = new Nette\Utils\Random;
+		$this->klic = $activationcode->generate();
+
+	 try {
+			$mail = new Nette\Mail\Message();
+			$mailer = new Nette\Mail\SmtpMailer(array(
+			'host' => 'smtp.office365.com',
+                'username' => 'mailP4@365.pslib.cz',
+                'password' => 'Woto4856',
+				'port' => 587,
+                'secure' => 'tls',
+			));
+			$mail->setFrom('mailP4@365.pslib.cz','Admin');
+			$mail->addTo($values->email);
+			$mail->setSubject('Aktivace');
+			$mail->setBody($this->klic);
+			$mailer ->send($mail);
+			$this->flashMessage('Aktivaèní klíè byl odeslán na váš mail');
+			$this->database->table('users')->insert(array(
+			  'nick' => $values->username,
+				'email' => $values->email,
+			 'password' => passwords::hash($values->password),
+			 'actcode' => $this->klic,
+				));
+			$this->redirect('activate');
+
+		 } 
+		 catch (Nette\Security\AuthenticationException $e)
+			{
+				$form->addError('Error.');
+			}
+			
+	}
+	
+	
+
+	public function actionOut()
+	{
+		$this->getUser()->logout();
+		$this->flashMessage('You have been signed out.');
+		$this->redirect('in');
+	}
+
+	/*public function ActivateAccount()
+	{
+	try {
+		$this->database->table('users')->insert(array(
+		// SELECT * WHERE username = 'username', then
+        'activated' => 1;
+		));
+		 } 
+	 catch (Nette\Security\AuthenticationException $e)
+	 {
+        $form->addError('Error.');
+	 }
+	}
+	*/
+}
+
+
+class MyAuthenticator extends Nette\Object implements NS\IAuthenticator
+{
+    public $database;
+
+    function __construct(Nette\Database\Context $database)
+    {
+        $this->database = $database;
+    }
+
+    function authenticate(array $credentials)
+    {
+        list($username, $password) = $credentials;
+        $row = $this->database->table('users')
+            ->where('nick', $username)->fetch();
+
+        if (!$row) {
+            throw new NS\AuthenticationException('User not found.');
+        }
+
+        if (!NS\Passwords::verify($password, $row->password)) {
+            throw new NS\AuthenticationException('Invalid password.');
+        }
+
+        return new NS\Identity($row->id, $row->rank, array('nick' => $row->username));
+    }
+}

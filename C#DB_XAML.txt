@@ -1,0 +1,21 @@
+<Window x:Class="Databazova_aplikace.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Databazova_aplikace"
+        xmlns:VM="clr-namespace:Databazova_aplikace.ViewModel"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="350" Width="525">
+    <Window.DataContext>
+        <VM:MainViewModel x:Name="VM"></VM:MainViewModel>
+    </Window.DataContext>
+    <StackPanel Orientation="Vertical">
+        <DataGrid SelectedIndex="{Binding VybranyIndex, Mode=TwoWay}"  Height="200" ItemsSource="{Binding DataView}"></DataGrid>
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Jméno: "></TextBlock>
+            <TextBox Width="100" Text="{Binding Jmeno, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBox>
+            <Button Command="{Binding Pridej}" Content="Pøidej"></Button>
+        </StackPanel>
+    </StackPanel>
+</Window>

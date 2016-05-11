@@ -1,0 +1,49 @@
+ROUTER(config)#router eigrp 10				 // zapnutí EIGRP, 10 = èíslo AS
+ROUTER(config-router)#network 192.168.1.0 		// které interfacy se zapojí do EIGRP (podle èísla
+sítì)
+ROUTER(config-router)#no auto-summary			 // vypnutí autosumarizace (shlukování záznamù
+s rùznými maskami podsítí)
+ROUTER(config-router)#variance number 			// nestejnomìrné rozvažování
+ROUTER(config-router)#distance eigrp 80 130 		// zmìna AD, slouží k zabránìní smyèkám mezi
+vice AS pøi vícecestné redistribuci
+ROUTER(config-router)#passive-interface serial0/0 	// neoznamuje routovací informace na
+						daném interface - pøestane vysílat i pøijímat hello pakety (tedy routovací updaty)
+ROUTER(config-router)#eigrp stub 			// posílá sumární a pøímo pøipojené routy
+ROUTER(config-router)#eigrp stub receive-only		 // neposílá nic
+ROUTER(config-router)#eigrp stub connected		 // posílá pouze pøímo pøipojené routy
+ROUTER(config-router)#eigrp stub static 		// posílá pouze statické routy
+ROUTER(config-router)#eigrp stub summary 		// posílá pouze sumární
+ROUTER#show ip eigrp traffic 				// statistiky EIGRP paketù
+ROUTER#show ip eigrp topology 				// zobrazí záznamy z tabulky topologie
+
+Dùležité pøíkazy pro správný chod sítì
+Router> 						// uživatelský mód
+Router>show ip route 					// Zobrazí obsah smìrovací tabulky
+Router>show ip protokol					 // Zobrazí informace o použitém protokolu
+Router>ping <adresa> 					// zjišuje dostupnost cíle
+Router>traceroute <adresa>				 //trasování cesty k cíli
+Router>enable 						// pøepnutí do privilegovaného modu
+Router#							 // privilegovaný mód
+Router#configure terminal				 // pøepnutí do globální konfigurace
+Router(config)# 					// globální konfigurace
+Router(config)#hostname <jméno> 			// nastaví jméno zaøízení
+Router(config)#enable password <heslo>			 //zapne potøebu zadání hesla pøi pøechodu do
+konfiguraèního módu
+Router(config)#enable secret <heslo> 			//heslo pro pøechod do konfiguraèního módu (bude
+								uloženo zašifrované)
+Router(config)#interface <jméno> 			// pøepnutí do konfigurace interfacu
+Router(config-if)# 					// konfigurace interfacu
+Router(config-if)# ip address <adresa> <maska> 		// nastaví na daném rozhraní danou IP
+adresu
+Router(config-if)#clock rate 				//nastavení rychlosti pøenosu
+Router(config-if)#shutdown				 // vypne rozhraní
+Router(config-if)#no shutdown				 // zapne rozhraní
+
+DHCP konfigurace
+Router(config)#ip dhcp poll IP10 			//IP10 je název, jedno jaký.
+Router(dhcp-config)# network 192.168.10.0 255.255.255.0 //pro jakou sít bude pøidìlovat
+Router(dhcp-config)#dns 192.168.1.3 			//nastavíme pøidìlovaný DNS server.
+Router(dhcp-config)#default 192.168.10.1 		//Default gateway
+Router(config)#ip dhcp exc 192.168.10.1 192.168.10.10   //pøípadné vylouèení adres, které se pøidìlují.
+Vlan
+

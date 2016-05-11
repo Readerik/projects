@@ -1,0 +1,81 @@
+<?php
+
+namespace App\Presenters;
+
+use Nette;
+use App\Model;
+use Nette\Application\UI;
+use Nette\Utils\Finder;
+use Nette\Utils\Image;
+
+class HomepagePresenter extends BasePresenter
+{
+	private $database;
+
+    public function __construct(Nette\Database\Context $database)
+    {
+        $this->database = $database;
+    }
+	public function renderDefault()
+	{
+		$this->template->posts = $this->database->table('posts');	
+
+		$dir = '..\album';
+		$arr = array();
+		$arr2 = array();
+		
+		foreach (Finder::findFiles('*.jpg')->from($dir) as $file) 
+		{
+			$cesta = str_replace("..\album", "..\changed", $file);
+				$image = Image::fromFile($file);
+				$image->resize(280, 140);
+				$image->save($cesta);
+				array_push($arr2, $cesta);
+      			array_push($arr, $file);
+		}
+		
+		$this->template->i = 0;
+		$this->template->cislo = count($arr);
+		$this->template->pole2 = $arr2;
+		$this->template->pole = $arr;
+		$this->template->promenna = "Galerie";
+	}
+
+
+	protected function createComponentUploadForm() {
+
+		$form = new Nette\Application\UI\Form;
+
+		$form->addUpload('img', 'Obrázek:')
+         ->addRule(Nette\Application\UI\Form::IMAGE, 'Obrázek musí být JPEG, PNG nebo GIF.');
+
+		$form->addSubmit('create', 'Upload');
+
+	    $form->onSuccess[] = array($this, 'uploadFormSubmitted');
+
+		 return $form;
+
+	}
+
+	public function uploadFormSubmitted($form) {
+
+                $values = $form->values;
+				$filename = $values['img']->getSanitizedName();
+
+                if ($values['img']->isOk()) {
+					$values['img']->move('../album//'.$filename);
+
+					foreach (Finder::findFiles('*.jpg')->from("../album") as $file) {
+						$image = Image::fromFile($file);
+						$newPath = str_replace('../album', '../changed', $file);
+
+						$image->resize(280, 140);
+						$image->save($newPath);
+					}
+
+                } else {
+                    $this->flashMessage('Obrázek se nepodaøilo nahrát.', 'warning');
+                }
+	}
+
+}
